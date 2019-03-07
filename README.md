@@ -8,4 +8,3 @@ g++ -std=c++11 RaceWinnersThreadProblem.cc -o RaceWinnersThreadProblem
 
 For C
 gcc -lpthread RaceWinnersThreadProblem.c -o RaceWinnersThreadProblem
-
