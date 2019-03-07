@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <assert.h>
 
 #define NUM_RUNNERS 3
 
@@ -42,7 +43,7 @@ typedef enum {
     MAX_RANK = THIRD
 }Rank;
 
-#define INRANGE(x) (((x) >= FIRST) && ((x) <= THIRD)) 
+#define INRANGE(x) (((x) >= FIRST) && ((x) <= MAX_RANK)) 
 #define VALIDRANK(x, y, z) \
     (INRANGE(x) && INRANGE(y) && INRANGE(z) && \
      ((x) != (y)) && ((y) != (z)) && ((x) != (z)) )
@@ -55,84 +56,83 @@ typedef struct {
     unsigned int results[MAX_RANK];
 }Runner;
 
+struct listRunners{
+    Runner *runner;
+    struct listRunners *next;
+};
+
 void add_entry (Runner *runner, Rank rank) {
+    if (!runner) {
+	printf("%s list member empty\n",__FUNCTION__);
+	assert(runner != NULL);
+    }
     runner->results[RANKTOIDX(rank)]++;// adds an entry to the key "rank"
 }
 
-void input(Runner *Dave, Runner *Jeff, Runner *Ben) {
-    //     while (true) {
-    // Possible solution Code here
+void input(struct listRunners *runners) {
+    while (1) {
+	// Possible solution Code here
 
-    unsigned int daveRank,jeffRank,benRank;
-    printf("Enter ranks for Dave, Jeff, Ben respectively\n");
-    scanf("%d %d %d",&daveRank,&jeffRank,&benRank);
-    //printf("%d %d %d\n",INRANGE(daveRank),jeffRank,benRank);
-    // following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
-    if (VALIDRANK(daveRank, jeffRank, benRank)) {
-	add_entry(Dave,daveRank);	
-	add_entry(Jeff,jeffRank);
-	add_entry(Ben,benRank);
-    }
-    else {
-	printf("Invalid Input\n");
-    }
+	unsigned int daveRank,jeffRank,benRank;
+	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
+	scanf("%d %d %d",&daveRank,&jeffRank,&benRank);
+	//printf("%d %d %d\n",INRANGE(daveRank),jeffRank,benRank);
+	// following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
+	if (VALIDRANK(daveRank, jeffRank, benRank)) {
+	    struct listRunners* curr = runners;
+	    add_entry(curr->runner,daveRank);	
+	    curr = curr->next;
+	    add_entry(curr->runner,jeffRank);
+	    curr = curr->next;
+	    add_entry(curr->runner,benRank);
+	}
+	else {
+	    printf("Invalid Input\n");
+	}
 
-    // Possible solution Code here
-    //   } 
+	// Possible solution Code here
+    } 
 }
 
-void output(Runner *Dave, Runner *Jeff, Runner *Ben) {
-    //     while (true) {
-    // Possible solution Code here
+void output(struct listRunners *runners) {
+    while (1) {
+	// Possible solution Code here
+	struct listRunners* head = runners;
 
-    struct Node {
-	Runner *runner;
-	struct Node* next;
-    };
+	struct listRunners *prev = NULL;
+	struct listRunners *curr = NULL;
+	int swapped = 0;
+	unsigned int curr_runner_wins = 0;
+	unsigned int next_runner_wins = 0;
+	do {
+	    swapped = 0;
+	    curr = head;
 
-    struct Node dave = {Dave, NULL};
-    struct Node jeff = {Jeff, NULL};
-    struct Node ben = {Ben, NULL};
-
-    dave.next = &jeff;
-    jeff.next = &ben;
-
-    struct Node* head = &dave;
-
-    struct Node *prev = NULL;
-    struct Node *curr = NULL;
-    int swapped = 0;
-    unsigned int curr_runner_wins = 0;
-    unsigned int next_runner_wins = 0;
-    do {
-	swapped = 0;
-	curr = head;
-
-	while (curr->next != prev) {
-	    curr_runner_wins = curr->runner->results[RANKTOIDX(FIRST)];
-	    next_runner_wins = curr->next->runner->results[RANKTOIDX(FIRST)];
-	    if (curr_runner_wins < next_runner_wins) {
-		Runner *tmp = curr->runner;
-		curr->runner = curr->next->runner;
-		curr->next->runner = tmp;
-		swapped = 1;
+	    while (curr->next != prev) {
+		curr_runner_wins = curr->runner->results[RANKTOIDX(FIRST)];
+		next_runner_wins = curr->next->runner->results[RANKTOIDX(FIRST)];
+		if (curr_runner_wins < next_runner_wins) {
+		    Runner *tmp = curr->runner;
+		    curr->runner = curr->next->runner;
+		    curr->next->runner = tmp;
+		    swapped = 1;
+		}
+		curr = curr->next;
 	    }
+	    prev = curr;
+	} while(swapped);
+
+
+	printf("New Overall Ranks are:\n");
+	curr = head;
+	while (curr) {
+	    printf("%s (%d) ",curr->runner->name, curr->runner->results[RANKTOIDX(FIRST)]);
 	    curr = curr->next;
 	}
-	prev = curr;
-    } while(swapped);
+	printf("\n");
 
-
-    printf("New Overall Ranks are:\n");
-    curr = head;
-    while (curr) {
-	printf("%s (%d) ",curr->runner->name, curr->runner->results[RANKTOIDX(FIRST)]);
-	curr = curr->next;
+	// Possible solution Code here
     }
-    printf("\n");
-
-    // Possible solution Code here
-    //   }
 }
 
 int main() {
@@ -150,10 +150,36 @@ int main() {
 	.name = "Ben",
 	.results = {0,0,0}
     };
-
+#if 0
     while (1) {
 	input(&Dave, &Jeff, &Ben);
 	output(&Dave, &Jeff, &Ben);
-    }  
+    }
+#endif
+    pthread_t threadIn, threadOut;
+    int  iret1, iret2;
+
+    /* Create independent threads each of which will execute function */
+
+    struct listRunners runner1 = {&Dave, NULL}; 
+    struct listRunners runner2 = {&Jeff, NULL}; 
+    struct listRunners runner3 = {&Ben, NULL}; 
+
+    runner1.next = &runner2;
+    runner2.next = &runner3;
+
+    struct listRunners* runners = &runner1;
+
+    void (*input_function)( struct listRunners* ) = &input;
+    iret1 = pthread_create( &threadIn, NULL, (void* (*)(void*))(input_function), (void*) runners);
+    void (*output_function)( struct listRunners* ) = &output;
+    iret2 = pthread_create( &threadOut, NULL, (void* (*)(void*))(output_function), (void*) runners);
+
+    /* Wait till threads are complete before main continues. Unless we  */
+    /* wait we run the risk of executing an exit which will terminate   */
+    /* the process and all threads before the threads have completed.   */
+
+    pthread_join( threadIn, NULL);
+    pthread_join( threadOut, NULL);      
     return 0;
 }
