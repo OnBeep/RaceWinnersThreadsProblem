@@ -39,7 +39,7 @@
 #include <algorithm>
 #include <atomic>
 
-#define SCHEDULER
+#undef SCHEDULER
 using namespace std;
 
 
