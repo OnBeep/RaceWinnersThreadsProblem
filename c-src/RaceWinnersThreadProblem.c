@@ -79,7 +79,6 @@ void input(struct listRunners *runners) {
 	unsigned int ranks[NUM_RUNNERS];
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
 	scanf("%d %d %d",&ranks[0],&ranks[1],&ranks[2]);
-	//printf("%d %d %d\n",INRANGE(daveRank),jeffRank,benRank);
 	// following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
 	if (VALIDRANK(ranks[0], ranks[1], ranks[2])) {
 	    struct listRunners* curr = runners;
@@ -111,6 +110,7 @@ void output(struct listRunners *runners) {
 	int swapped = 0;
 	unsigned int curr_runner_wins = 0;
 	unsigned int next_runner_wins = 0;
+	// Sort
 	do {
 	    swapped = 0;
 	    curr = head;
@@ -159,11 +159,8 @@ int main() {
 	.name = "Ben",
 	.results = {0,0,0}
     };
-    pthread_t threadIn, threadOut;
-    int  iret1, iret2;
-
-    /* Create independent threads each of which will execute function */
-
+    
+    // Form Linked List of Runner Objects
     struct listRunners runner1 = {&Dave, NULL}; 
     struct listRunners runner2 = {&Jeff, NULL}; 
     struct listRunners runner3 = {&Ben, NULL}; 
@@ -179,14 +176,14 @@ int main() {
 	output(runners);
     }
 #else
+    /* Create independent threads each of which will execute function */
+    pthread_t threadIn, threadOut;
+    int  iret1, iret2;
     void (*input_function)( struct listRunners* ) = &input;
     iret1 = pthread_create( &threadIn, NULL, (void* (*)(void*))(input_function), (void*) runners);
     void (*output_function)( struct listRunners* ) = &output;
     iret2 = pthread_create( &threadOut, NULL, (void* (*)(void*))(output_function), (void*) runners);
 
-    /* Wait till threads are complete before main continues. Unless we  */
-    /* wait we run the risk of executing an exit which will terminate   */
-    /* the process and all threads before the threads have completed.   */
     pthread_join( threadIn, NULL);
     pthread_join( threadOut, NULL);      
 #endif
