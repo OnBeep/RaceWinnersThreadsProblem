@@ -76,18 +76,18 @@ void input(struct listRunners *runners) {
 #endif
 	// Possible solution Code here
 
-	unsigned int daveRank,jeffRank,benRank;
+	unsigned int ranks[NUM_RUNNERS];
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
-	scanf("%d %d %d",&daveRank,&jeffRank,&benRank);
+	scanf("%d %d %d",&ranks[0],&ranks[1],&ranks[2]);
 	//printf("%d %d %d\n",INRANGE(daveRank),jeffRank,benRank);
 	// following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
-	if (VALIDRANK(daveRank, jeffRank, benRank)) {
+	if (VALIDRANK(ranks[0], ranks[1], ranks[2])) {
 	    struct listRunners* curr = runners;
-	    add_entry(curr->runner,daveRank);	
-	    curr = curr->next;
-	    add_entry(curr->runner,jeffRank);
-	    curr = curr->next;
-	    add_entry(curr->runner,benRank);
+	    for (unsigned int i = 0; i < NUM_RUNNERS; i++)
+	    {
+		add_entry(curr->runner, ranks[i]);
+		curr = curr->next;
+	    }
 	}
 	else {
 	    printf("Invalid Input\n");
