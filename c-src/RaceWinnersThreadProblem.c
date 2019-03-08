@@ -34,7 +34,7 @@
 #include <string.h>
 #include <assert.h>
 
-#define SCHEDULER
+#undef SCHEDULER
 #define NUM_RUNNERS 3
 
 typedef enum {
