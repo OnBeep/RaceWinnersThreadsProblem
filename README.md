@@ -1,6 +1,48 @@
 # RaceWinnersThreadsProblem
 Program using Thread Library that prints overall Ranking of winners from Races after every input 
 
+Problem Statement
+   - 3 Runners (e.g. Dave, Jeff, Ben) Participated in Multiple Races
+   - For Each Race, every Runner's Ranks are recorded i.e. 1 or 2 or 3 as Race Concludes
+   - Need to print overall Ranking of winners from Races after every input
+ 
+for e.g. If results so far are:
+ 
+   Dave {1,1,2,1,3,1,2} // ranks from the races
+   
+   Jeff {2,3,3,2,1,3,1}
+   
+   Ben  {3,2,1,3,2,2,3}
+   
+   i.e. Current Ranking in terms of Races Won is:
+   
+   Dave (4) Jeff (2) Ben (1)
+   
+   User inputs:
+   
+   3 2 1 // Dave Jeff Ben respectively
+   
+   New Overall Ranks are:
+   
+   Dave (4) Jeff (2) Ben (2)
+   
+# Implementation Guidelines (please read carefully before proceeding)
+Core Implementation is provided to you. You would need to add only a few lines to complete the Solution.
+ 
+Your soulution needs to run smoothly without any Aborts or Exceptions, Infinite loops
+ 
+You would have to ensure that the Threaded Solution matches Expected Behavior from a Scheduler (explained later in this readme)
+    
+Input (sample to be supplied by Orion. Orion will test your solution for additional inputs):
+   
+ There are 2 threads:
+   - "input" thread that consumes the Race result
+   - "output" thread that computes Overall Ranks and prints them
+ 
+ You can add any standard libraries you may seem fit
+ 
+ You may NOT modify main() 
+
 # Building the Program
 
 For C++
