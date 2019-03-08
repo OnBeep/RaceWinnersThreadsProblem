@@ -34,6 +34,7 @@
 #include <string.h>
 #include <assert.h>
 
+#define SCHEDULER
 #define NUM_RUNNERS 3
 
 typedef enum {
@@ -70,7 +71,9 @@ void add_entry (Runner *runner, Rank rank) {
 }
 
 void input(struct listRunners *runners) {
+#if !defined(SCHEDULER)
     while (1) {
+#endif
 	// Possible solution Code here
 
 	unsigned int daveRank,jeffRank,benRank;
@@ -91,11 +94,15 @@ void input(struct listRunners *runners) {
 	}
 
 	// Possible solution Code here
-    } 
+#if !defined(SCHEDULER)
+    }
+#endif 
 }
 
 void output(struct listRunners *runners) {
+#if !defined(SCHEDULER)
     while (1) {
+#endif
 	// Possible solution Code here
 	struct listRunners* head = runners;
 
@@ -132,7 +139,9 @@ void output(struct listRunners *runners) {
 	printf("\n");
 
 	// Possible solution Code here
+#if !defined(SCHEDULER)
     }
+#endif
 }
 
 int main() {
@@ -150,12 +159,6 @@ int main() {
 	.name = "Ben",
 	.results = {0,0,0}
     };
-#if 0
-    while (1) {
-	input(&Dave, &Jeff, &Ben);
-	output(&Dave, &Jeff, &Ben);
-    }
-#endif
     pthread_t threadIn, threadOut;
     int  iret1, iret2;
 
@@ -170,6 +173,12 @@ int main() {
 
     struct listRunners* runners = &runner1;
 
+#if defined(SCHEDULER)
+    while (1) {
+	input(runners);
+	output(runners);
+    }
+#else
     void (*input_function)( struct listRunners* ) = &input;
     iret1 = pthread_create( &threadIn, NULL, (void* (*)(void*))(input_function), (void*) runners);
     void (*output_function)( struct listRunners* ) = &output;
@@ -178,8 +187,8 @@ int main() {
     /* Wait till threads are complete before main continues. Unless we  */
     /* wait we run the risk of executing an exit which will terminate   */
     /* the process and all threads before the threads have completed.   */
-
     pthread_join( threadIn, NULL);
     pthread_join( threadOut, NULL);      
+#endif
     return 0;
 }
