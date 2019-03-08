@@ -29,19 +29,19 @@ for e.g. If results so far are:
 # Implementation Guidelines (please read carefully before proceeding)
 Core Implementation is provided to you. You would need to add only a few lines to complete the Solution.
  
-Your soulution needs to run smoothly without any Aborts or Exceptions, Infinite loops
+Your soulution needs to run smoothly without any Aborts or Exceptions, out of control output
  
-You would have to ensure that the Threaded Solution matches Expected Behavior from a Scheduler (explained later in this readme)
+You would have to ensure that your Threaded Solution matches Expected Behavior as observed by running a debug Scheduler (explained later in this readme)
     
-Input (sample to be supplied by Orion. Orion will test your solution for additional inputs):
+Input (sample to be supplied by Orion at the end of readme. Orion will test your solution for additional inputs):
    
  There are 2 threads:
    - "input" thread that consumes the Race result
    - "output" thread that computes Overall Ranks and prints them
  
- You can add any standard libraries you may seem fit
+ We think you may not need any other standard libraries than already included in the programs
  
- You may NOT modify main() 
+ You can NOT modify main() 
 
 # Building the Program
 
