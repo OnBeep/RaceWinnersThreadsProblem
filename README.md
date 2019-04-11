@@ -77,33 +77,14 @@ Run the executable: ./RaceWinnersThreadProblem
 ./RaceWinnersThreadProblem
 
 Enter ranks for Dave, Jeff, Ben respectively
-
 3 1 2
-
-New Overall Ranks are:
-
-Jeff (1) Dave (0) Ben (0)
-
+Jeff (1) Ben (0) Dave (0) 
 Enter ranks for Dave, Jeff, Ben respectively
-
-2 1 3
-
-New Overall Ranks are:
-
+1 2 3
 Jeff (1) Dave (1) Ben (0) 
-
 Enter ranks for Dave, Jeff, Ben respectively
-
 3 2 1
-
-New Overall Ranks are:
-
-Jeff (1) Dave (1) Ben (1)
-
+Ben (1) Jeff (1) Dave (1) 
 Enter ranks for Dave, Jeff, Ben respectively
-
-3 1 2
-
-New Overall Ranks are:
-
-Dave (2) Jeff (1) Ben (1)
+2 3 1
+Ben (2) Jeff (1) Dave (1) 
