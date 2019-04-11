@@ -77,14 +77,25 @@ Run the executable: ./RaceWinnersThreadProblem
 ./RaceWinnersThreadProblem
 
 Enter ranks for Dave, Jeff, Ben respectively
+
 3 1 2
+
 Jeff (1) Ben (0) Dave (0) 
+
 Enter ranks for Dave, Jeff, Ben respectively
+
 1 2 3
+
 Jeff (1) Dave (1) Ben (0) 
+
 Enter ranks for Dave, Jeff, Ben respectively
+
 3 2 1
+
 Ben (1) Jeff (1) Dave (1) 
+
 Enter ranks for Dave, Jeff, Ben respectively
+
 2 3 1
+
 Ben (2) Jeff (1) Dave (1) 
