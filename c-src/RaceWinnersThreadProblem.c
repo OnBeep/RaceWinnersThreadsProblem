@@ -62,6 +62,17 @@ struct listRunners{
     struct listRunners *next;
 };
 
+// Pthread signaling mechanism variables
+pthread_mutex_t output_condition_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t output_condition_cond = PTHREAD_COND_INITIALIZER;
+
+typedef enum{
+	false,
+	true
+}bool;
+
+bool received_input = false;
+
 void add_entry (Runner *runner, Rank rank) {
     if (!runner) {
 	printf("%s list member empty\n",__FUNCTION__);
@@ -75,6 +86,9 @@ void input(struct listRunners *runners) {
     while (1) {
 #endif
 	// Possible solution Code here
+#if !defined(SCHEDULER)
+	pthread_mutex_lock(&output_condition_mutex);
+#endif
 
 	unsigned int ranks[NUM_RUNNERS];
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
@@ -94,6 +108,11 @@ void input(struct listRunners *runners) {
 
 	// Possible solution Code here
 #if !defined(SCHEDULER)
+	received_input = true;
+	pthread_cond_signal(&output_condition_cond);
+	pthread_mutex_unlock(&output_condition_mutex);
+#endif
+#if !defined(SCHEDULER)
     }
 #endif 
 }
@@ -103,6 +122,13 @@ void output(struct listRunners *runners) {
     while (1) {
 #endif
 	// Possible solution Code here
+#if !defined(SCHEDULER)
+	pthread_mutex_lock(&output_condition_mutex);
+	while(!received_input){
+		pthread_cond_wait(&output_condition_cond, &output_condition_mutex);
+	}
+#endif
+
 	struct listRunners* head = runners;
 
 	struct listRunners *prev = NULL;
@@ -139,6 +165,10 @@ void output(struct listRunners *runners) {
 	printf("\n");
 
 	// Possible solution Code here
+#if !defined(SCHEDULER)
+	received_input = false;
+	pthread_mutex_unlock(&output_condition_mutex);
+#endif
 #if !defined(SCHEDULER)
     }
 #endif
