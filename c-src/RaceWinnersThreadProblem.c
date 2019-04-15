@@ -18,13 +18,11 @@
    New Overall Ranks are:
    Dave (4) Ben (3) Jeff (2)
    And so on.. until User exits
-
    Implementation Guidelines
    - Input (sample to be supplied by Orion. Orion will test your program for additional inputs):
    - 2 threads:
    - "input" thread that consumes the Race result
    - "output" thread that computes Overall Ranks and prints them
-
    Implement using Posix Thread Library
    */
 
@@ -33,6 +31,9 @@
 #include <pthread.h>
 #include <string.h>
 #include <assert.h>
+
+// Just for usign bool type
+#include <stdbool.h>
 
 #undef SCHEDULER
 #define NUM_RUNNERS 3
@@ -64,13 +65,36 @@ struct listRunners{
 
 void add_entry (Runner *runner, Rank rank) {
     if (!runner) {
-	printf("%s list member empty\n",__FUNCTION__);
-	assert(runner != NULL);
+        printf("%s list member empty\n",__FUNCTION__);
+        assert(runner != NULL);
     }
     runner->results[RANKTOIDX(rank)]++;// adds an entry to the key "rank"
 }
 
+#define FIXING_ENTERING_INPUT_ORDER
+#ifdef FIXING_ENTERING_INPUT_ORDER
+// Adding a simple fix for matching every single entering order to be: Dave, Jeff, and Ben
+#define DAVE_NAME   "Dave"
+#define DAVE_IDX    0
+#define JEFF_NAME   "Jeff"
+#define JEFF_IDX    1
+#define BEN_NAME    "Ben"
+#define BEN_IDX     2
+#endif
+
+// Create one mutex and one condition vbariable
+pthread_mutex_t my_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  my_cond  = PTHREAD_COND_INITIALIZER;
+// Create one valid input flag
+bool b_valid_input = false;
+
 void input(struct listRunners *runners) {
+    // Better to validate input argument
+    if (NULL == runners) 
+    {
+        return;
+    }
+
 #if !defined(SCHEDULER)
     while (1) {
 #endif
@@ -79,18 +103,49 @@ void input(struct listRunners *runners) {
 	unsigned int ranks[NUM_RUNNERS];
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
 	scanf("%d %d %d",&ranks[0],&ranks[1],&ranks[2]);
+
+    // Lock the mutex and check input 
+    pthread_mutex_lock(&my_mutex);
+
 	// following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
 	if (VALIDRANK(ranks[0], ranks[1], ranks[2])) {
 	    struct listRunners* curr = runners;
+#ifdef FIXING_ENTERING_INPUT_ORDER
 	    for (unsigned int i = 0; i < NUM_RUNNERS; i++)
 	    {
-		add_entry(curr->runner, ranks[i]);
-		curr = curr->next;
+            if (0 == strncmp(curr->runner->name, DAVE_NAME, sizeof(curr->runner->name)))
+            {
+                add_entry(curr->runner, ranks[DAVE_IDX]);
+            }
+            if (0 == strncmp(curr->runner->name, JEFF_NAME, sizeof(curr->runner->name)))
+            {
+                add_entry(curr->runner, ranks[JEFF_IDX]);
+            }
+            if (0 == strncmp(curr->runner->name, BEN_NAME, sizeof(curr->runner->name)))
+            {
+                add_entry(curr->runner, ranks[BEN_IDX]);
+            }
+            curr = curr->next;
 	    }
+#else
+	    for (unsigned int i = 0; i < NUM_RUNNERS; i++)
+	    {
+            add_entry(curr->runner, ranks[i]);
+            curr = curr->next;
+	    }
+#endif
+
+        // Set valid input flag and signal
+        b_valid_input = true;
+        pthread_cond_signal(&my_cond);
+
 	}
 	else {
 	    printf("Invalid Input\n");
 	}
+
+    // Unlock the mutex and check input 
+    pthread_mutex_unlock(&my_mutex);
 
 	// Possible solution Code here
 #if !defined(SCHEDULER)
@@ -99,46 +154,65 @@ void input(struct listRunners *runners) {
 }
 
 void output(struct listRunners *runners) {
+    // Better to validate input argument
+    if (NULL == runners) 
+    {
+        return;
+    }
+
 #if !defined(SCHEDULER)
     while (1) {
 #endif
-	// Possible solution Code here
-	struct listRunners* head = runners;
+        // Possible solution Code here
 
-	struct listRunners *prev = NULL;
-	struct listRunners *curr = NULL;
-	int swapped = 0;
-	unsigned int curr_runner_wins = 0;
-	unsigned int next_runner_wins = 0;
-	// Sort
-	do {
-	    swapped = 0;
-	    curr = head;
+        // Lock the mutex and check valid input signal
+        pthread_mutex_lock(&my_mutex);
+        while (!b_valid_input)
+        {
+            pthread_cond_wait(&my_cond, &my_mutex);
+        }
+        b_valid_input = false;
+            
+        struct listRunners* head = runners;
 
-	    while (curr->next != prev) {
-		curr_runner_wins = curr->runner->results[RANKTOIDX(FIRST)];
-		next_runner_wins = curr->next->runner->results[RANKTOIDX(FIRST)];
-		if (curr_runner_wins < next_runner_wins) {
-		    Runner *tmp = curr->runner;
-		    curr->runner = curr->next->runner;
-		    curr->next->runner = tmp;
-		    swapped = 1;
-		}
-		curr = curr->next;
-	    }
-	    prev = curr;
-	} while(swapped);
+        struct listRunners *prev = NULL;
+        struct listRunners *curr = NULL;
+        int swapped = 0;
+        unsigned int curr_runner_wins = 0;
+        unsigned int next_runner_wins = 0;
+
+        // Sort
+        do {
+            swapped = 0;
+            curr = head;
+
+            while (curr->next != prev) {
+                curr_runner_wins = curr->runner->results[RANKTOIDX(FIRST)];
+                next_runner_wins = curr->next->runner->results[RANKTOIDX(FIRST)];
+                if (curr_runner_wins < next_runner_wins) {
+                    Runner *tmp = curr->runner;
+                    curr->runner = curr->next->runner;
+                    curr->next->runner = tmp;
+                    swapped = 1;
+                }
+                curr = curr->next;
+            }
+            prev = curr;
+        } while(swapped);
 
 
-	printf("New Overall Ranks are:\n");
-	curr = head;
-	while (curr) {
-	    printf("%s (%d) ",curr->runner->name, curr->runner->results[RANKTOIDX(FIRST)]);
-	    curr = curr->next;
-	}
-	printf("\n");
+        printf("New Overall Ranks are:\n");
+        curr = head;
+        while (curr) {
+            printf("%s (%d) ",curr->runner->name, curr->runner->results[RANKTOIDX(FIRST)]);
+            curr = curr->next;
+        }
+        printf("\n");
 
-	// Possible solution Code here
+        // Unlock the mutex
+        pthread_mutex_unlock(&my_mutex);
+
+        // Possible solution Code here
 #if !defined(SCHEDULER)
     }
 #endif
@@ -146,18 +220,18 @@ void output(struct listRunners *runners) {
 
 int main() {
     Runner Dave = {
-	.name = "Dave",
-	.results = {0,0,0}
+        .name = "Dave",
+        .results = {0,0,0}
     };
 
     Runner Jeff = {
-	.name = "Jeff",
-	.results = {0,0,0}
+        .name = "Jeff",
+        .results = {0,0,0}
     };
 
     Runner Ben = {
-	.name = "Ben",
-	.results = {0,0,0}
+        .name = "Ben",
+        .results = {0,0,0}
     };
     
     // Form Linked List of Runner Objects
@@ -172,8 +246,8 @@ int main() {
 
 #if defined(SCHEDULER)
     while (1) {
-	input(runners);
-	output(runners);
+        input(runners);
+        output(runners);
     }
 #else
     /* Create independent threads each of which will execute function */
@@ -181,8 +255,22 @@ int main() {
     int  iret1, iret2;
     void (*input_function)( struct listRunners* ) = &input;
     iret1 = pthread_create( &threadIn, NULL, (void* (*)(void*))(input_function), (void*) runners);
+#if 1
+    // Better to check pthread_create
+    if (0 != iret1)
+    {
+        perror("pthread_create input");
+    }
+#endif
     void (*output_function)( struct listRunners* ) = &output;
     iret2 = pthread_create( &threadOut, NULL, (void* (*)(void*))(output_function), (void*) runners);
+#if 1
+    // Better to check pthread_create
+    if (0 != iret2)
+    {
+        perror("pthread_create input");
+    }
+#endif
 
     pthread_join( threadIn, NULL);
     pthread_join( threadOut, NULL);      
