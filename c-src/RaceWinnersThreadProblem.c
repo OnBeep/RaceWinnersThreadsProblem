@@ -91,6 +91,11 @@ void input(struct listRunners *runners) {
 #endif
 
 	unsigned int ranks[NUM_RUNNERS];
+	// need to keep track of original order of runner list for the following:
+	//     - input thread: input is requested in original order of list
+	//     - output thread: order of list changes based on runner ranks
+	char original_runner_order[NUM_RUNNERS][10] = {"Dave", "Jeff", "Ben"};
+
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
 	scanf("%d %d %d",&ranks[0],&ranks[1],&ranks[2]);
 	// following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
@@ -98,8 +103,13 @@ void input(struct listRunners *runners) {
 	    struct listRunners* curr = runners;
 	    for (unsigned int i = 0; i < NUM_RUNNERS; i++)
 	    {
-		add_entry(curr->runner, ranks[i]);
-		curr = curr->next;
+			while(curr != NULL){
+				if(strcmp(curr->runner->name, original_runner_order[i]) == 0){
+					add_entry(curr->runner, ranks[i]);
+				}
+				curr = curr->next;
+			}
+			curr = runners;
 	    }
 	}
 	else {
