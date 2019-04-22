@@ -34,7 +34,7 @@
 #include <string.h>
 #include <assert.h>
 
-#undef SCHEDULER
+#define SCHEDULER 1
 #define NUM_RUNNERS 3
 
 typedef enum {
@@ -139,6 +139,39 @@ void output(struct listRunners *runners) {
 	printf("\n");
 
 	// Possible solution Code here
+    curr = head;
+    if (curr)
+    {
+        if (strcmp(curr->runner->name, "Dave") != 0)
+        {
+            if (strcmp( curr->next->runner->name, "Dave") == 0)
+            {
+                Runner *tmp = curr->runner;
+                curr->runner = curr->next->runner;
+                curr->next->runner = tmp;
+            }
+            else
+            {
+                Runner *tmp = curr->runner;
+                curr->runner = curr->next->next->runner;
+                curr->next->next->runner = tmp;
+
+            }
+        }
+
+        curr = curr->next;
+
+        if (strcmp(curr->runner->name, "Jeff") != 0)
+        {
+            if (strcmp(curr->next->runner->name, "Jeff") == 0)
+            {
+                Runner *tmp = curr->runner;
+                curr->runner = curr->next->runner;
+                curr->next->runner = tmp;
+            }
+        }
+    }
+
 #if !defined(SCHEDULER)
     }
 #endif
