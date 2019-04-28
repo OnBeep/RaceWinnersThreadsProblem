@@ -44,7 +44,7 @@ typedef enum {
     MAX_RANK = THIRD
 }Rank;
 
-#define INRANGE(x) (((x) >= FIRST) && ((x) <= MAX_RANK)) 
+#define INRANGE(x) (((x) >= FIRST) && ((x) <= MAX_RANK))
 #define VALIDRANK(x, y, z) \
     (INRANGE(x) && INRANGE(y) && INRANGE(z) && \
      ((x) != (y)) && ((y) != (z)) && ((x) != (z)) )
@@ -62,6 +62,14 @@ struct listRunners{
     struct listRunners *next;
 };
 
+
+//Venkat: 1 mutex and a msg passing var
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+#define PING 1
+#define PONG 2
+unsigned int msg = PONG;
+
+
 void add_entry (Runner *runner, Rank rank) {
     if (!runner) {
 	printf("%s list member empty\n",__FUNCTION__);
@@ -70,12 +78,21 @@ void add_entry (Runner *runner, Rank rank) {
     runner->results[RANKTOIDX(rank)]++;// adds an entry to the key "rank"
 }
 
+
+
+
 void input(struct listRunners *runners) {
 #if !defined(SCHEDULER)
     while (1) {
-#endif
 	// Possible solution Code here
+       pthread_mutex_lock(&mutex);
 
+       if(msg != PONG)
+       {
+           pthread_mutex_unlock(&mutex);
+	   continue;
+       }
+#endif
 	unsigned int ranks[NUM_RUNNERS];
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
 	scanf("%d %d %d",&ranks[0],&ranks[1],&ranks[2]);
@@ -94,52 +111,82 @@ void input(struct listRunners *runners) {
 
 	// Possible solution Code here
 #if !defined(SCHEDULER)
+	msg = PING;
+	pthread_mutex_unlock(&mutex);
     }
-#endif 
+#endif
 }
 
 void output(struct listRunners *runners) {
 #if !defined(SCHEDULER)
     while (1) {
+        pthread_mutex_lock(&mutex);
+
+	if(msg != PING)
+	{
+	    pthread_mutex_unlock(&mutex);
+            continue;
+        }
+
 #endif
-	// Possible solution Code here
-	struct listRunners* head = runners;
-
-	struct listRunners *prev = NULL;
+	    // Possible solution Code here
+	    //
+	    //
+	    // Venkat: Removed sorting logic here with simple max min tracker
 	struct listRunners *curr = NULL;
-	int swapped = 0;
-	unsigned int curr_runner_wins = 0;
-	unsigned int next_runner_wins = 0;
-	// Sort
-	do {
-	    swapped = 0;
-	    curr = head;
-
-	    while (curr->next != prev) {
-		curr_runner_wins = curr->runner->results[RANKTOIDX(FIRST)];
-		next_runner_wins = curr->next->runner->results[RANKTOIDX(FIRST)];
-		if (curr_runner_wins < next_runner_wins) {
-		    Runner *tmp = curr->runner;
-		    curr->runner = curr->next->runner;
-		    curr->next->runner = tmp;
-		    swapped = 1;
-		}
-		curr = curr->next;
-	    }
-	    prev = curr;
-	} while(swapped);
-
 
 	printf("New Overall Ranks are:\n");
-	curr = head;
-	while (curr) {
-	    printf("%s (%d) ",curr->runner->name, curr->runner->results[RANKTOIDX(FIRST)]);
-	    curr = curr->next;
+	curr = runners;
+	unsigned int max = 0;
+	unsigned int min = curr->runner->results[RANKTOIDX(FIRST)];
+	unsigned int equal = 0;
+	struct listRunners *max_head = NULL;
+	struct listRunners *min_head = NULL;
+
+	//Venkat:Loop to keep track of max min
+	while (curr != NULL)
+	{
+             if (curr->runner->results[RANKTOIDX(FIRST)] >= max)
+	     {
+		 max = curr->runner->results[RANKTOIDX(FIRST)];
+		 max_head = curr;
+	     }
+             if (curr->runner->results[RANKTOIDX(FIRST)] <= min)
+	     {
+                 min = curr->runner->results[RANKTOIDX(FIRST)];
+		 min_head = curr;
+	     }
+
+         curr = curr->next;
 	}
+        //Reset curr
+        curr = runners;
+
+	//Venkat: if min and max are equal, all are equal positions
+	if(max_head == min_head)
+	       equal = 1;
+
+	//Venkat:Block to print outcomes
+	if(max_head != NULL && min_head != NULL)
+	{
+	  printf("%s (%d) ",max_head->runner->name, max_head->runner->results[RANKTOIDX(FIRST)]);
+	  while(curr)
+	  {
+	      if(curr != min_head && curr != max_head)
+	           printf("%s (%d) ",curr->runner->name, curr->runner->results[RANKTOIDX(FIRST)]);
+	      curr=curr->next;
+	  }
+
+	  if(!equal)
+              printf("%s (%d) ",min_head->runner->name, min_head->runner->results[RANKTOIDX(FIRST)]);
+	}
+
 	printf("\n");
 
 	// Possible solution Code here
 #if !defined(SCHEDULER)
+        msg = PONG;
+        pthread_mutex_unlock(&mutex);
     }
 #endif
 }
@@ -159,11 +206,11 @@ int main() {
 	.name = "Ben",
 	.results = {0,0,0}
     };
-    
+
     // Form Linked List of Runner Objects
-    struct listRunners runner1 = {&Dave, NULL}; 
-    struct listRunners runner2 = {&Jeff, NULL}; 
-    struct listRunners runner3 = {&Ben, NULL}; 
+    struct listRunners runner1 = {&Dave, NULL};
+    struct listRunners runner2 = {&Jeff, NULL};
+    struct listRunners runner3 = {&Ben, NULL};
 
     runner1.next = &runner2;
     runner2.next = &runner3;
@@ -185,7 +232,7 @@ int main() {
     iret2 = pthread_create( &threadOut, NULL, (void* (*)(void*))(output_function), (void*) runners);
 
     pthread_join( threadIn, NULL);
-    pthread_join( threadOut, NULL);      
+    pthread_join( threadOut, NULL);
 #endif
     return 0;
 }
