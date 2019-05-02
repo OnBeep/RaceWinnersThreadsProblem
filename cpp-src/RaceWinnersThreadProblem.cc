@@ -38,10 +38,22 @@
 #include <map>
 #include <algorithm>
 #include <atomic>
+#include <condition_variable>
 
 #undef SCHEDULER
+//#define SCHEDULER
 using namespace std;
 
+// condition variables to synchronize input and output threads
+mutex inMutex;
+condition_variable inCondVar;
+
+mutex outMutex;
+condition_variable outCondVar;
+
+// pre-conditions for the above condition variables
+// setup input thread to run initially
+bool inputReady{false}, outputDone{true};
 
 class Runner {
     public:
@@ -58,9 +70,15 @@ class Runner {
 
 void input(list<Runner> &runners) {
 #if !defined(SCHEDULER)
+    cout << "input: ns" << endl;
     while (true) {
 #endif
-	// Possible solution Code here
+        
+        // wait until ouput thread has finished processing the previous
+	// set of inputs
+	// note: this will always be true for the first time 	    
+        unique_lock<mutex> lck(outMutex);
+	outCondVar.wait(lck,[]{return outputDone;});
 
 	vector<unsigned int> ranks(3);
 	cout <<"Enter ranks for Dave, Jeff, Ben respectively"<<endl;
@@ -80,7 +98,16 @@ void input(list<Runner> &runners) {
 	    cout << "Invalid Input" << endl;
 	}
 
-	// Possible solution Code here
+	//set the pre-conditions as appropriate and notify the 
+	//output thread to begin processing
+	outputDone = false;
+
+	{
+	   lock_guard<mutex> lck(inMutex);	
+           inputReady = true;
+	}
+        inCondVar.notify_one();
+
 #if !defined(SCHEDULER)
     }  
 #endif
@@ -92,9 +119,14 @@ bool descending (pair<string, unsigned int> &a, pair<string, unsigned int> &b) {
 
 void output(list<Runner> &runners) {
 #if !defined(SCHEDULER)
+    cout << "output: ns" << endl; 
     while (true) {
 #endif
-	// Possible solution Code here
+        
+        // wait until input thread has finished processing 
+	// i.e.: input is available for us to process
+        unique_lock<mutex> lck(inMutex);
+	inCondVar.wait(lck,[]{return inputReady;});
 
 	vector< pair<string, unsigned int> > winners; // data structure that holds count of Races where Runner Won
 	for (auto &runner : runners)
@@ -107,7 +139,16 @@ void output(list<Runner> &runners) {
 	}
 	cout<<endl;
 
-	// Possible solution Code here
+	//set the pre-conditions as appropriate and notify the 
+	//input thread to begin processing
+        inputReady = false;
+
+	{
+	   lock_guard<mutex> lck(outMutex);	
+	   outputDone = true;
+	}
+        outCondVar.notify_one();
+
 #if !defined(SCHEDULER)
     }
 #endif
