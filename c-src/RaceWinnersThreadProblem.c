@@ -28,7 +28,9 @@
    Implement using Posix Thread Library
    */
 
-
+/* 
+ * Solution submitted by Pranami Bhattacharya on 5/5/2019
+ */  
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
@@ -70,22 +72,47 @@ void add_entry (Runner *runner, Rank rank) {
     runner->results[RANKTOIDX(rank)]++;// adds an entry to the key "rank"
 }
 
+void add_entry_name(struct listRunners* curr, char name[], Rank rank) {
+    if (curr == NULL)
+         return;
+    while(curr) {
+        if (strcmp(curr->runner->name, name) == 0) {
+            curr->runner->results[RANKTOIDX(rank)]++; // update specific entry
+            return;
+        } else {
+            curr = curr->next;
+        }
+    }
+}
+
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  cond = PTHREAD_COND_INITIALIZER;
+int turn = 0; // using a simple turn var to synchronize turns between input and output fns
+
 void input(struct listRunners *runners) {
 #if !defined(SCHEDULER)
     while (1) {
 #endif
 	// Possible solution Code here
+	
+	pthread_mutex_lock(&lock);
+	while (turn != 0)
+		pthread_cond_wait(&cond, &lock);
 
 	unsigned int ranks[NUM_RUNNERS];
 	printf("Enter ranks for Dave, Jeff, Ben respectively\n");
 	scanf("%d %d %d",&ranks[0],&ranks[1],&ranks[2]);
+	char *names[3] = {"Dave", "Jeff", "Ben"};
 	// following condition check ensures that Ranks are in 1-3 range, as well as there are no repeats
+	struct listRunners* curr = runners;
 	if (VALIDRANK(ranks[0], ranks[1], ranks[2])) {
-	    struct listRunners* curr = runners;
+	    //struct listRunners* curr = runners;
 	    for (unsigned int i = 0; i < NUM_RUNNERS; i++)
-	    {
-		add_entry(curr->runner, ranks[i]);
-		curr = curr->next;
+	    {   
+                char name[10];
+                strcpy(name, names[i]);
+		add_entry_name(curr, name, ranks[i]);
+		//curr = curr->next;
 	    }
 	}
 	else {
@@ -93,6 +120,10 @@ void input(struct listRunners *runners) {
 	}
 
 	// Possible solution Code here
+	// Send an broadcast once the input thread is done processing
+	turn = 1;
+        pthread_cond_broadcast(&cond);
+        pthread_mutex_unlock(&lock);
 #if !defined(SCHEDULER)
     }
 #endif 
@@ -103,6 +134,10 @@ void output(struct listRunners *runners) {
     while (1) {
 #endif
 	// Possible solution Code here
+        pthread_mutex_lock(&lock);
+        while(turn != 1)
+		pthread_cond_wait(&cond, &lock);
+
 	struct listRunners* head = runners;
 
 	struct listRunners *prev = NULL;
@@ -139,6 +174,12 @@ void output(struct listRunners *runners) {
 	printf("\n");
 
 	// Possible solution Code here
+	// sort the list of runners to print the correct order
+       
+	// send a broadcast once o/p thread is done processing
+	turn = 0;
+	pthread_cond_broadcast(&cond);
+	pthread_mutex_unlock(&lock);
 #if !defined(SCHEDULER)
     }
 #endif
